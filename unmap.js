@@ -156,9 +156,10 @@ function unpackMap(mapFile, outDir, opts) {
   const total          = sources.length;
   const stats          = { written: 0, skipped: 0, noContent: 0, totalBytes: 0 };
 
-  // Determine a sub-folder per map file (keeps multiple maps tidy)
-  const mapBasename    = path.basename(mapFile, path.extname(mapFile)); // e.g. "bundle.js"
-  const mapOutDir      = flat ? outDir : path.join(outDir, mapBasename);
+  // Use the full filename as the sub-folder name — guarantees uniqueness across
+  // versioned files like bundle.js.map.1 / bundle.js.map.2
+  const mapBasename = path.basename(mapFile);
+  const mapOutDir   = flat ? outDir : path.join(outDir, mapBasename);
 
   if (!quiet) {
     console.log(`  ${c.grey}${total} source(s) → ${mapOutDir}${c.reset}`);
