@@ -1,0 +1,12 @@
+{
+  "name": "unmapper",
+  "version": "1.0.0",
+  "description": "Unpack source maps back into their original source files",
+  "bin": {
+    "unmap": "./unmap.js"
+  },
+  "scripts": {
+    "unmap": "node unmap.js"
+  },
+  "license": "MIT"
+}
