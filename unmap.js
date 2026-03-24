@@ -137,24 +137,27 @@ function unpackMap(mapFile, outDir, opts) {
   try {
     raw = fs.readFileSync(mapFile, 'utf8');
   } catch (e) {
-    die(`cannot read "${mapFile}": ${e.message}`);
+    console.error(`  ${c.red}skip${c.reset} ${mapFile}: cannot read file (${e.message})`);
+    return { written: 0, skipped: 0, noContent: 0, totalBytes: 0, failed: 1 };
   }
 
   let map;
   try {
     map = JSON.parse(raw);
   } catch (e) {
-    die(`"${mapFile}" is not valid JSON: ${e.message}`);
+    console.error(`  ${c.red}skip${c.reset} ${mapFile}: invalid JSON (${e.message})`);
+    return { written: 0, skipped: 0, noContent: 0, totalBytes: 0, failed: 1 };
   }
 
   if (!map.sources || !Array.isArray(map.sources)) {
-    die(`"${mapFile}" has no "sources" array — is this a valid source map?`);
+    console.error(`  ${c.red}skip${c.reset} ${mapFile}: no "sources" array — not a valid source map`);
+    return { written: 0, skipped: 0, noContent: 0, totalBytes: 0, failed: 1 };
   }
 
   const sources        = map.sources;
   const sourcesContent = map.sourcesContent || [];
   const total          = sources.length;
-  const stats          = { written: 0, skipped: 0, noContent: 0, totalBytes: 0 };
+  const stats          = { written: 0, skipped: 0, noContent: 0, totalBytes: 0, failed: 0 };
 
   // Use the full filename as the sub-folder name — guarantees uniqueness across
   // versioned files like bundle.js.map.1 / bundle.js.map.2
@@ -222,7 +225,7 @@ function main() {
   const outDir = path.resolve(args.output);
   ensureDir(outDir);
 
-  let totalWritten = 0, totalSkipped = 0, totalNoContent = 0, totalBytes = 0;
+  let totalWritten = 0, totalSkipped = 0, totalNoContent = 0, totalBytes = 0, totalFailed = 0;
 
   for (const mapFile of args.maps) {
     const s = unpackMap(path.resolve(mapFile), outDir, args);
@@ -230,6 +233,7 @@ function main() {
     totalSkipped    += s.skipped;
     totalNoContent  += s.noContent;
     totalBytes      += s.totalBytes;
+    totalFailed     += s.failed;
   }
 
   // Summary
@@ -240,11 +244,12 @@ ${c.bold}Summary${c.reset}
   ${c.grey}Map files    :${c.reset} ${mapCount} ${mapWord}
   ${c.green}${c.bold}Written      :${c.reset} ${totalWritten} file(s)  ${c.grey}(${formatBytes(totalBytes)})${c.reset}
   ${c.yellow}No content   :${c.reset} ${totalNoContent} file(s)
-  ${c.red}Errors       :${c.reset} ${totalSkipped} file(s)
+  ${c.red}Skipped      :${c.reset} ${totalFailed} map file(s) ${c.grey}(bad/unreadable)${c.reset}
+  ${c.red}Errors       :${c.reset} ${totalSkipped} source file(s)
   ${c.grey}Output dir   :${c.reset} ${path.resolve(args.output)}
 `);
 
-  process.exit(totalSkipped > 0 ? 1 : 0);
+  process.exit((totalSkipped > 0 || totalFailed > 0) ? 1 : 0);
 }
 
 main();
